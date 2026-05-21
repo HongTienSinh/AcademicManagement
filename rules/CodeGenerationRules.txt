@@ -1,0 +1,28 @@
+# MVC Architecture Code Generation Rules
+
+## 1. Directory Structure
+- Follow the standard MVC directory structure:
+  - /models: Data structure, database entities, and repository logic.
+  - /views: Frontend templates, UI components.
+  - /controllers: Request handling, business logic orchestration, and data mapping.
+
+## 2. Responsibility Separation
+- Models: Do not contain UI logic or direct HTTP request handling.
+- Views: Do not contain business logic or database queries.
+- Controllers: Act as the glue. Do not put database logic directly here (use Models/Services).
+
+## 3. Naming Conventions
+- Model classes: PascalCase (e.g., User, ProductOrder).
+- Controller classes: PascalCase + 'Controller' (e.g., UserController, ProductController).
+- View files: snake_case or kebab-case depending on framework.
+
+## 4. Coding Standards
+- Use Dependency Injection where possible.
+- Ensure all database queries are performed in the Model layer.
+- Ensure all HTTP responses are returned from the Controller layer.
+- Keep controllers thin; delegate complex business logic to services or models.
+
+## 5. Security & Best Practices
+- Sanitize all user inputs in the Controller before passing to Model.
+- Use parameterized queries or ORM to prevent SQL injection.
+- Ensure views are escaped to prevent XSS.

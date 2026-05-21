@@ -1,0 +1,9 @@
+/root
+├── /app
+│   ├── /models      # Chứa các file định nghĩa dữ liệu (Class, Entity)
+│   ├── /views       # Chứa các file hiển thị (Template, HTML)
+│   └── /controllers # Chứa các logic điều hướng
+├── /config          # Cấu hình hệ thống, kết nối database
+├── /public          # File tĩnh (CSS, JS, Hình ảnh)
+├── /routes          # Định nghĩa các đường dẫn (URL)
+└── /vendor          # Thư viện bên thứ ba

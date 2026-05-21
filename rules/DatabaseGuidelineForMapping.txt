@@ -1,0 +1,420 @@
+============================================================
+ DatabaseGuidelineForMapping.txt
+ Hệ thống Quản lý Học vụ – AcademicManagement
+ Ngày tạo: 2026-05-14
+ Phiên bản: 1.0
+============================================================
+
+Mục lục:
+1. Cấu trúc cây phân cấp các bảng (Table Hierarchy)
+2. Khóa ngoại và mối quan hệ (Foreign Keys & Relationships)
+3. Tổng quan về View, Trigger và Procedure
+
+============================================================
+1. CẤU TRÚC CÂY PHÂN CẤP CÁC BẢNG
+============================================================
+
+AcademicManagement
+├── Roles
+│   ├── RoleId          (PK, INT)
+│   └── RoleName        (VARCHAR(50), NOT NULL)
+│
+├── Users
+│   ├── UserId          (PK, UNIQUEIDENTIFIER, DEFAULT NEWID())
+│   ├── Username        (UQ, VARCHAR(50), NOT NULL)
+│   ├── PasswordHash    (NVARCHAR(255), NOT NULL)
+│   ├── FullName        (NVARCHAR(100), NOT NULL)
+│   ├── Email           (UQ, VARCHAR(100), NOT NULL)
+│   ├── RoleId          (FK -> Roles.RoleId, INT, NOT NULL)
+│   └── IsActive        (BIT, DEFAULT 1)
+│
+├── Departments
+│   ├── DepartmentId    (PK, INT IDENTITY(1,1))
+│   ├── DepartmentCode  (UQ, VARCHAR(20), NOT NULL)
+│   └── DepartmentName  (NVARCHAR(100), NOT NULL)
+│
+├── Courses
+│   ├── CourseId        (PK, INT IDENTITY(1,1))
+│   ├── CourseCode      (UQ, VARCHAR(20), NOT NULL)
+│   ├── CourseName      (NVARCHAR(150), NOT NULL)
+│   ├── Credits         (INT, CHECK >0 AND <=10)
+│   └── DepartmentId    (FK -> Departments.DepartmentId, INT)
+│
+├── Classes
+│   ├── ClassId         (PK, INT IDENTITY(1,1))
+│   ├── ClassCode       (UQ, VARCHAR(50), NOT NULL)
+│   ├── CourseId        (FK -> Courses.CourseId, INT)
+│   ├── TeacherId       (FK -> Users.UserId, UNIQUEIDENTIFIER)
+│   ├── Semester        (VARCHAR(20), NOT NULL)
+│   ├── MaxStudents     (INT, DEFAULT 40)
+│   └── Status          (VARCHAR(20), DEFAULT 'Open')
+│
+└── Enrollments
+    ├── EnrollmentId    (PK, INT IDENTITY(1,1))
+    ├── ClassId         (FK -> Classes.ClassId, INT)
+    ├── StudentId       (FK -> Users.UserId, UNIQUEIDENTIFIER)
+    ├── EnrollmentDate  (DATETIME, DEFAULT GETDATE())
+    ├── MidtermGrade    (FLOAT, CHECK >=0 AND <=10, NULL)
+    ├── FinalGrade      (FLOAT, CHECK >=0 AND <=10, NULL)
+    └── AverageGrade    (Computed PERSISTED: MidtermGrade*0.4 + FinalGrade*0.6)
+    (Ràng buộc UNIQUE: UQ_Student_Class trên (ClassId, StudentId))
+
+============================================================
+2. KHÓA NGOẠI VÀ MỐI QUAN HỆ
+============================================================
+
+2.1. Users.RoleId -> Roles.RoleId
+   - Mỗi User thuộc một Role duy nhất (Admin/Teacher/Student).
+   - ON DELETE: không hành động (mặc định), không cho xoá Role nếu còn User tham chiếu.
+
+2.2. Courses.DepartmentId -> Departments.DepartmentId
+   - Một môn học thuộc về một khoa.
+   - ON DELETE: không hành động.
+
+2.3. Classes.CourseId -> Courses.CourseId
+   - Một lớp học phần được mở dựa trên một môn học.
+   - ON DELETE: không hành động.
+
+2.4. Classes.TeacherId -> Users.UserId
+   - Giáo viên phụ trách lớp học phần (bắt buộc User có RoleId=2).
+   - ON DELETE: không hành động.
+
+2.5. Enrollments.ClassId -> Classes.ClassId
+   - Mỗi đăng ký thuộc về một lớp học phần.
+   - ON DELETE: không hành động.
+
+2.6. Enrollments.StudentId -> Users.UserId
+   - Sinh viên thực hiện đăng ký (User có RoleId=3).
+   - ON DELETE: không hành động.
+
+2.7. Ràng buộc UNIQUE trên Enrollments(ClassId, StudentId)
+   - Một sinh viên chỉ được đăng ký một lần vào một lớp học phần.
+
+Mối quan hệ logic bổ sung:
+- Khi tạo lớp, TeacherId phải là User có RoleId = 2 và IsActive = 1.
+- Khi đăng ký, StudentId phải là User có RoleId = 3 và IsActive = 1.
+- Không thể xoá Khoa nếu có môn học tham chiếu.
+- Không thể xoá Môn học nếu có lớp học phần tham chiếu.
+- Không thể xoá Lớp học phần nếu có đăng ký (Enrollments) tham chiếu.
+- Không thể giảm MaxStudents của lớp xuống dưới số sinh viên đã đăng ký.
+
+============================================================
+3. TỔNG QUAN VỀ VIEW, TRIGGER VÀ PROCEDURE
+============================================================
+
+3.1. VIEWS 
+Hướng dẫn sử dụng các View trong hệ thống quản lý đăng ký học phần.
+Mọi truy vấn dữ liệu từ tầng Application/API nên ưu tiên dùng
+các View dưới đây thay vì JOIN trực tiếp vào bảng gốc.
+
+VIEW: vw_ClassList
+MỤC ĐÍCH:
+    Danh sách tất cả lớp học phần kèm thông tin tổng hợp gồm
+    môn học, giảng viên phụ trách và sĩ số hiện tại.
+    Dùng cho màn hình duyệt/tìm kiếm lớp học phần (Student,
+    Admin) và trang quản lý lớp (Admin, Teacher).
+CÁC CỘT CHÍNH:
+    ClassId         - Khóa chính của lớp học phần.
+    ClassCode       - Mã lớp (hiển thị ra UI).
+    CourseCode      - Mã môn học.
+    CourseName      - Tên môn học.
+    Credits         - Số tín chỉ.
+    DepartmentName  - Khoa/Bộ môn quản lý môn học.
+    TeacherName     - Họ tên giảng viên phụ trách (FullName).
+    Semester        - Học kỳ.
+    MaxStudents     - Sĩ số tối đa.
+    EnrolledCount   - Số sinh viên đã đăng ký (tính real-time).
+    Status          - Trạng thái lớp (Open / Closed / v.v.).
+    IsFull          - 1 nếu lớp đã đủ sĩ số, 0 nếu còn chỗ.
+LƯU Ý MAPPING:
+    - IsFull là cột computed (không lưu DB), chỉ dùng để hiển
+      thị / lọc; không dùng để UPDATE.
+    - EnrolledCount được tính bằng COUNT + GROUP BY, tránh gọi
+      View này trong vòng lặp N+1.
+    - Filter theo Semester, Status, IsFull được thực hiện ở
+      WHERE khi query View.
+VÍ DỤ SỬ DỤNG:
+    -- Lấy các lớp còn chỗ trong học kỳ 2024-1
+    SELECT * FROM vw_ClassList
+    WHERE Semester = '2024-1' AND IsFull = 0 AND Status = 'Open';
+
+VIEW: vw_StudentEnrollments
+MỤC ĐÍCH:
+    Chi tiết toàn bộ đăng ký học phần của sinh viên, bao gồm
+    điểm giữa kỳ, cuối kỳ, điểm trung bình và kết quả đạt/không
+    đạt. Dùng cho bảng điểm cá nhân (Student) và trang nhập
+    điểm (Teacher, Admin).
+CÁC CỘT CHÍNH:
+    EnrollmentId    - Khóa chính của bản ghi đăng ký.
+    StudentId       - UserId của sinh viên.
+    Username        - Tên đăng nhập sinh viên.
+    StudentName     - Họ tên sinh viên (FullName).
+    ClassId         - Khóa chính lớp học phần.
+    ClassCode       - Mã lớp học phần.
+    CourseCode      - Mã môn học.
+    CourseName      - Tên môn học.
+    Credits         - Số tín chỉ.
+    DepartmentName  - Khoa/Bộ môn.
+    Semester        - Học kỳ.
+    MidtermGrade    - Điểm giữa kỳ (FLOAT, NULL nếu chưa có).
+    FinalGrade      - Điểm cuối kỳ (FLOAT, NULL nếu chưa có).
+    AverageGrade    - Điểm trung bình (FLOAT, NULL nếu chưa có).
+    Result          - 'Đạt' / 'Không đạt' / 'Chưa có điểm'
+                      (computed từ AverageGrade).
+LƯU Ý MAPPING:
+    - Result là cột computed, không dùng trong điều kiện UPDATE.
+    - Khi hiển thị bảng điểm cá nhân, filter thêm
+      WHERE StudentId = @CurrentUserId.
+    - Khi Teacher xem điểm lớp mình, JOIN thêm với
+      vw_ClassList hoặc filter qua ClassId tương ứng.
+    - NULL ở MidtermGrade / FinalGrade / AverageGrade có nghĩa
+      giáo viên chưa nhập; xử lý hiển thị ở tầng UI (không
+      thay thế bằng 0).
+VÍ DỤ SỬ DỤNG:
+    -- Bảng điểm cá nhân của một sinh viên
+    SELECT * FROM vw_StudentEnrollments
+    WHERE StudentId = @StudentId
+    ORDER BY Semester, CourseCode;
+    -- Danh sách điểm của một lớp (dành cho Teacher)
+    SELECT * FROM vw_StudentEnrollments
+    WHERE ClassId = @ClassId
+    ORDER BY StudentName;
+
+VIEW: vw_FailedCourses
+MỤC ĐÍCH:
+    Danh sách các bản ghi đăng ký mà sinh viên có điểm trung
+    bình dưới 4 (nợ môn). Dùng cho báo cáo nợ môn (Admin) và
+    cảnh báo học vụ.
+CÁC CỘT CHÍNH:
+    StudentId       - UserId của sinh viên.
+    Username        - Tên đăng nhập sinh viên.
+    FullName        - Họ tên sinh viên.
+    CourseCode      - Mã môn học bị nợ.
+    CourseName      - Tên môn học bị nợ.
+    Semester        - Học kỳ xảy ra nợ môn.
+    AverageGrade    - Điểm trung bình (< 4).
+    DepartmentName  - Khoa/Bộ môn quản lý môn học.
+LƯU Ý MAPPING:
+    - View đã lọc sẵn AverageGrade < 4; không cần thêm điều
+      kiện điểm khi query.
+    - Chỉ trả về các bản ghi đã CÓ điểm (AverageGrade IS NOT
+      NULL), vì NULL không thỏa < 4 trong T-SQL.
+    - Thường được dùng qua sp_GetFailedCoursesReport (chỉ Admin).
+    - Có thể GROUP BY StudentId để đếm số môn nợ mỗi sinh viên.
+VÍ DỤ SỬ DỤNG:
+    -- Tổng hợp số môn nợ theo sinh viên
+    SELECT StudentId, Username, FullName, COUNT(*) AS FailedCount
+    FROM vw_FailedCourses
+    GROUP BY StudentId, Username, FullName
+    ORDER BY FailedCount DESC;
+
+VIEW: vw_Teachers
+MỤC ĐÍCH:
+    Danh sách người dùng có vai trò Giảng viên (RoleId = 2).
+    Dùng để populate dropdown chọn giảng viên khi tạo/sửa lớp,
+    và trang quản lý tài khoản giảng viên (Admin).
+CÁC CỘT CHÍNH:
+    UserId          - Khóa chính, dùng làm TeacherId khi tạo lớp.
+    Username        - Tên đăng nhập.
+    FullName        - Họ tên đầy đủ.
+    Email           - Địa chỉ email.
+    IsActive        - Trạng thái tài khoản (1 = đang hoạt động).
+LƯU Ý MAPPING:
+    - Khi populate dropdown tạo lớp, chỉ lấy IsActive = 1.
+    - View không trả về PasswordHash hay thông tin nhạy cảm;
+      an toàn để dùng trong các API response.
+    - Không dùng View này để xác thực quyền; dùng bảng Users
+      trực tiếp kèm RoleId trong logic bảo mật.
+VÍ DỤ SỬ DỤNG:
+    -- Dropdown giảng viên đang hoạt động
+    SELECT UserId, FullName FROM vw_Teachers
+    WHERE IsActive = 1
+    ORDER BY FullName;
+
+VIEW: vw_Students
+MỤC ĐÍCH:
+    Danh sách người dùng có vai trò Sinh viên (RoleId = 3).
+    Dùng cho trang quản lý tài khoản sinh viên (Admin) và tra
+    cứu thông tin sinh viên (Admin, Teacher).
+CÁC CỘT CHÍNH:
+    UserId          - Khóa chính (StudentId trong Enrollments).
+    Username        - Tên đăng nhập.
+    FullName        - Họ tên đầy đủ.
+    Email           - Địa chỉ email.
+    IsActive        - Trạng thái tài khoản (1 = đang hoạt động).
+LƯU Ý MAPPING:
+    - Kết hợp với vw_StudentEnrollments qua UserId = StudentId
+      để lấy lịch sử học tập của một sinh viên cụ thể.
+    - View không trả về PasswordHash hay thông tin nhạy cảm;
+      an toàn để dùng trong các API response.
+    - Không dùng View này để xác thực quyền; dùng bảng Users
+      trực tiếp kèm RoleId trong logic bảo mật.
+VÍ DỤ SỬ DỤNG:
+    -- Tìm sinh viên theo tên (cho Admin/Teacher)
+    SELECT * FROM vw_Students
+    WHERE FullName LIKE N'%Nguyễn%' AND IsActive = 1;
+    -- Lấy toàn bộ lịch sử học của một sinh viên
+    SELECT s.Username, s.FullName, se.*
+    FROM vw_Students s
+    JOIN vw_StudentEnrollments se ON s.UserId = se.StudentId
+    WHERE s.UserId = @StudentId;
+
+3.2. TRIGGERS
+Các trigger bảo vệ toàn vẹn dữ liệu nghiệp vụ và ghi nhật ký kiểm toán.
+Trigger hoạt động tự động ở tầng DB; tầng Application KHÔNG cần gọi
+thủ công nhưng CẦN xử lý đúng lỗi THROW mà trigger ném ra.
+
+----------------------------------------------------------------
+TRIGGER: trg_Enrollments_CheckStatusAndCapacity
+----------------------------------------------------------------
+BẢNG ÁP DỤNG : Enrollments
+LOẠI          : INSTEAD OF INSERT
+MÃ LỖI        : 50030, 50031, 50032
+
+MỤC ĐÍCH:
+    Thay thế lệnh INSERT thô vào Enrollments để kiểm tra hai
+    điều kiện nghiệp vụ trước khi cho phép đăng ký:
+      (1) Lớp phải tồn tại và có Status = 'Open'.
+      (2) Số sinh viên hiện tại chưa đạt MaxStudents.
+    Nếu vượt qua cả hai, trigger tự thực hiện INSERT thực tế.
+
+LUỒNG XỬ LÝ:
+    1. Đọc ClassId, StudentId từ bảng INSERTED (hàng đang chèn).
+    2. Lấy Status và MaxStudents của lớp từ bảng Classes.
+       → Lớp không tồn tại: THROW 50030.
+    3. Kiểm tra Status = 'Open'.
+       → Không phải 'Open': THROW 50031.
+    4. Đếm số bản ghi Enrollments hiện có theo ClassId.
+       → Đã đủ sĩ số: THROW 50032.
+    5. Thực hiện INSERT vào Enrollments với (ClassId, StudentId).
+
+LƯU Ý MAPPING:
+    - Vì là INSTEAD OF, lệnh INSERT gốc của caller KHÔNG được
+      thực thi; trigger tự chèn với đúng hai cột (ClassId,
+      StudentId). Các cột còn lại (EnrollmentDate, Grade…)
+      lấy DEFAULT từ schema.
+    - Caller nhận lỗi SQL với số 50030/50031/50032; tầng API
+      nên bắt SqlException.Number và trả về HTTP 400/409 phù hợp.
+    - Trigger chỉ xử lý INSERT một hàng (single-row). Nếu sau
+      này cần bulk insert, cần cập nhật trigger để xử lý tập
+      hợp INSERTED thay vì DECLARE biến đơn.
+
+MÃ LỖI CHI TIẾT:
+    50030 – Lớp không tồn tại (ClassId không hợp lệ).
+    50031 – Lớp không còn mở đăng ký (Status <> 'Open').
+    50032 – Lớp đã đủ sĩ số tối đa (EnrolledCount >= MaxStudents).
+
+----------------------------------------------------------------
+TRIGGER: trg_Classes_PreventReduceMaxBelowEnrollment
+----------------------------------------------------------------
+BẢNG ÁP DỤNG : Classes
+LOẠI          : INSTEAD OF UPDATE
+MÃ LỖI        : 50033
+
+MỤC ĐÍCH:
+    Thay thế lệnh UPDATE thô lên bảng Classes để bảo vệ tính
+    nhất quán khi thay đổi MaxStudents: không cho phép đặt
+    MaxStudents thấp hơn số sinh viên đã thực sự đăng ký.
+
+LUỒNG XỬ LÝ:
+    1. Kiểm tra UPDATE(MaxStudents) — chỉ can thiệp khi cột
+       MaxStudents nằm trong tập cột được cập nhật.
+    2. Đọc ClassId và MaxStudents mới từ INSERTED;
+       đọc MaxStudents cũ từ DELETED.
+    3. Đếm số Enrollments hiện có theo ClassId.
+    4. So sánh MaxStudents mới với số đã đăng ký.
+       → Mới < Enrolled: THROW 50033.
+    5. Thực hiện UPDATE thực tế toàn bộ các cột của Classes
+       (ClassCode, CourseId, TeacherId, Semester,
+        MaxStudents, Status) từ bảng INSERTED.
+LƯU Ý MAPPING:
+    - Vì là INSTEAD OF, mọi UPDATE lên Classes (dù chỉ đổi
+      Status, Semester, v.v.) đều đi qua trigger này. Bước 5
+      viết lại toàn bộ cột — đảm bảo caller truyền đầy đủ
+      giá trị, không chỉ cột thay đổi.
+    - Trigger hiện xử lý single-row. Bulk update nhiều lớp
+      cùng lúc cần refactor theo tập hợp INSERTED/DELETED.
+    - Caller nhận SqlException 50033; tầng API trả HTTP 409.
+
+MÃ LỖI CHI TIẾT:
+    50033 – MaxStudents mới nhỏ hơn số sinh viên đã đăng ký.
+
+----------------------------------------------------------------
+TRIGGER: trg_Enrollments_AuditLog
+----------------------------------------------------------------
+BẢNG ÁP DỤNG : Enrollments
+LOẠI          : AFTER INSERT, UPDATE, DELETE
+PHỤ THUỘC     : Bảng AuditLog phải tồn tại với schema phù hợp.
+
+MỤC ĐÍCH:
+    Ghi lại toàn bộ thay đổi trên bảng Enrollments vào bảng
+    AuditLog để phục vụ kiểm toán, điều tra sự cố và truy vết
+    lịch sử nhập điểm.
+
+LUỒNG XỬ LÝ:
+    1. Xác định loại thao tác:
+         INSERTED và DELETED đều có dữ liệu → 'U' (Update).
+         Chỉ INSERTED → 'I' (Insert).
+         Chỉ DELETED  → 'D' (Delete).
+    2. FULL OUTER JOIN INSERTED và DELETED theo EnrollmentId
+       để lấy cả hàng mới lẫn hàng cũ trong một lần quét.
+    3. Serialize giá trị cũ (DELETED) và mới (INSERTED) sang
+       JSON bằng FOR JSON PATH, WITHOUT_ARRAY_WRAPPER.
+    4. INSERT vào AuditLog: TableName, Action, RecordId,
+       OldValues (JSON), NewValues (JSON), ChangedDate.
+
+SCHEMA BẢNG AuditLog (tham chiếu):
+    AuditLog
+    ├── AuditId      (PK, INT IDENTITY)
+    ├── TableName    (VARCHAR(100))   -- 'Enrollments'
+    ├── Action       (CHAR(1))        -- 'I' / 'U' / 'D'
+    ├── RecordId     (INT)            -- EnrollmentId
+    ├── OldValues    (NVARCHAR(MAX))  -- JSON hoặc NULL
+    ├── NewValues    (NVARCHAR(MAX))  -- JSON hoặc NULL
+    └── ChangedDate  (DATETIME)       -- GETDATE()
+
+LƯU Ý MAPPING:
+    - Trigger này là AFTER, nên chạy sau trigger INSTEAD OF
+      (trg_Enrollments_CheckStatusAndCapacity). AuditLog chỉ
+      ghi khi INSERT thực sự thành công.
+    - OldValues = NULL khi Action = 'I'; NewValues = NULL khi
+       Action = 'D'. Tầng đọc AuditLog cần xử lý NULL này.
+    - Hiện trigger không ghi UserId người thực hiện; nếu cần
+      truy vết actor, bổ sung SessionContext hoặc thêm cột
+      ChangedBy vào AuditLog và truyền qua
+      SESSION_CONTEXT(N'UserId') trước khi gọi SP.
+    - Trigger xử lý đúng cả batch multi-row nhờ dùng
+      FULL OUTER JOIN thay vì DECLARE biến đơn.
+
+
+3.3. STORED PROCEDURES
+
+Nhóm Hệ thống (Authentication & Account management)
+--------------------------------------------------
+sp_AuthenticateUser     : Xác thực đăng nhập, trả về thông tin User nếu thành công.
+sp_CreateUser           : Tạo tài khoản (Admin), kiểm tra username, email trùng.
+sp_UpdateUser           : Cập nhật thông tin user (FullName, Email, Role).
+sp_DeactivateUser       : Vô hiệu hóa tài khoản (không xóa vật lý).
+
+Nhóm Danh mục (Catalogs CRUD)
+--------------------------------------------------
+sp_InsertDepartment / sp_UpdateDepartment / sp_DeleteDepartment
+sp_InsertCourse     / sp_UpdateCourse     / sp_DeleteCourse
+sp_InsertClass      / sp_UpdateClass      / sp_DeleteClass
+   - Các thủ tục CRUD có kiểm tra ràng buộc nghiệp vụ (không xóa khi có tham chiếu, 
+     giáo viên phải hợp lệ, v.v.).
+
+Nhóm Tác vụ chính (Enrollment & Grading)
+--------------------------------------------------
+sp_EnrollStudent        : Sinh viên (hoặc Admin) đăng ký vào lớp. Kiểm tra quyền, 
+                         trạng thái lớp, sĩ số.
+sp_CancelEnrollment     : Hủy đăng ký khi lớp còn mở.
+sp_GetClassStudents     : Xem danh sách sinh viên của lớp (phân quyền theo Teacher/Admin).
+sp_UpdateGrade          : Giáo viên nhập điểm cho một đăng ký cụ thể.
+
+Nhóm Thống kê (Reports)
+--------------------------------------------------
+sp_GetStudentGrades     : Xem bảng điểm cá nhân (tự xem, hoặc giáo viên có dạy, hoặc Admin).
+sp_GetFailedCoursesReport : Báo cáo sinh viên nợ môn (chỉ Admin).
+
+Script các thủ tục

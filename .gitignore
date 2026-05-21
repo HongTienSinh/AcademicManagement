@@ -1,0 +1,98 @@
+# ========================================
+# Dependencies
+# ========================================
+node_modules/
+vendor/
+package-lock.json
+yarn.lock
+
+# ========================================
+# Environment variables
+# ========================================
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ========================================
+# IDE & Editor
+# ========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# ========================================
+# OS
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ========================================
+# Runtime data & Logs
+# ========================================
+pids/
+*.pid
+*.seed
+*.pid.lock
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ========================================
+# Application specific
+# ========================================
+request/
+public/uploads/
+temp/
+tmp/
+dist/
+build/
+
+# ========================================
+# Database
+# ========================================
+*.db
+*.sqlite
+*.sqlite3
+*.mdb
+
+# ========================================
+# Test coverage
+# ========================================
+coverage/
+.nyc_output/
+*.lcov
+
+# ========================================
+# Misc
+# ========================================
+.cache/
+*.backup
+*.bak
+*.swp
+*.swo
+.eslintcache
+.jest-cache/
