@@ -7,6 +7,7 @@ const { connectDB } = require('./config/db.config');
 
 const authRoutes = require('./routes/auth.routes');
 const courseRoutes = require('./routes/course.routes');
+const enrollmentRoutes = require('./routes/enrollment.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -53,6 +54,7 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/courses', courseRoutes);
+app.use('/api/enrollments', enrollmentRoutes);
 
 app.get('/', (req, res) => {
   res.redirect('/api-docs');
