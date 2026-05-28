@@ -23,7 +23,23 @@ const isAdmin = (req, res, next) => {
   next();
 };
 
+const isTeacher = (req, res, next) => {
+  if (!req.user || req.user.RoleId !== 2) {
+    return res.status(403).json({ error: 'Yêu cầu quyền Giảng viên' });
+  }
+  next();
+};
+
+const isStudent = (req, res, next) => {
+  if (!req.user || req.user.RoleId !== 3) {
+    return res.status(403).json({ error: 'Yêu cầu quyền Sinh viên' });
+  }
+  next();
+};
+
 module.exports = {
   verifyToken,
   isAdmin,
+  isTeacher,
+  isStudent,
 };

@@ -4,6 +4,7 @@
 │   ├── /views       # Chứa các file hiển thị (Template, HTML)
 │   └── /controllers # Chứa các logic điều hướng
 ├── /config          # Cấu hình hệ thống, kết nối database
+├── /middleware      # Cấu hình middleware cho cấu trúc web MVC
 ├── /public          # File tĩnh (CSS, JS, Hình ảnh)
 ├── /routes          # Định nghĩa các đường dẫn (URL)
 └── /vendor          # Thư viện bên thứ ba

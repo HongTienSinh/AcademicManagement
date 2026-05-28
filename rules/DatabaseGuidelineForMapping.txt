@@ -416,5 +416,3 @@ Nhóm Thống kê (Reports)
 --------------------------------------------------
 sp_GetStudentGrades     : Xem bảng điểm cá nhân (tự xem, hoặc giáo viên có dạy, hoặc Admin).
 sp_GetFailedCoursesReport : Báo cáo sinh viên nợ môn (chỉ Admin).
-
-Script các thủ tục
