@@ -9,7 +9,7 @@ const authRoutes = require('./routes/auth.routes');
 const courseRoutes = require('./routes/course.routes');
 const enrollmentRoutes = require('./routes/enrollment.routes');
 const classRoutes = require('./routes/class.routes');
-
+const studentRoutes = require('./routes/student.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,6 +52,10 @@ const swaggerOptions = {
         description: 'Quản lý lớp học phần và danh sách lớp',
       },
       {
+        name: 'Students',
+        description: 'Xem bảng điểm và thông tin của sinh viên',
+      },
+      {
         name: 'System',
         description: 'Kiểm tra trạng thái hệ thống',
       },
@@ -80,6 +84,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/classes', classRoutes);
+app.use('/api/students', studentRoutes);
 
 app.get('/', (req, res) => {
   res.redirect('/api-docs');
