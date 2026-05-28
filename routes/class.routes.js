@@ -4,16 +4,13 @@ const { getMyClasses } = require('../app/controllers/class.controller');
 const { verifyToken, isTeacher } = require('../middlewares/auth.middleware');
 
 /**
- * @route   GET /api/classes/my-classes
- * @desc    Lấy danh sách các lớp mà giảng viên đang phụ trách
- * @access  Private - Giảng viên (RoleId = 2)
- * @auth    Yêu cầu JWT token hợp lệ trong header Authorization: Bearer <token>
- * 
  * @swagger
  * /api/classes/my-classes:
  *   get:
+ *     tags:
+ *       - Classes
  *     summary: Lấy danh sách lớp của giảng viên hiện tại
- *     tags: [Classes]
+ *     description: Lấy danh sách tất cả các lớp học phần mà giảng viên đang phụ trách. Yêu cầu xác thực token và quyền Giảng viên.
  *     security:
  *       - BearerAuth: []
  *     responses:
@@ -29,7 +26,7 @@ const { verifyToken, isTeacher } = require('../middlewares/auth.middleware');
  *                   example: true
  *                 count:
  *                   type: number
- *                   example: 3
+ *                   example: 2
  *                 classes:
  *                   type: array
  *                   items:
@@ -37,30 +34,43 @@ const { verifyToken, isTeacher } = require('../middlewares/auth.middleware');
  *                     properties:
  *                       ClassId:
  *                         type: integer
+ *                         example: 1
  *                       ClassCode:
  *                         type: string
+ *                         example: "CS101-01"
  *                       CourseId:
  *                         type: integer
+ *                         example: 5
  *                       CourseCode:
  *                         type: string
+ *                         example: "CS101"
  *                       CourseName:
  *                         type: string
+ *                         example: "Lập trình C++"
  *                       Credits:
  *                         type: integer
+ *                         example: 3
  *                       DepartmentId:
  *                         type: integer
+ *                         example: 2
  *                       DepartmentName:
  *                         type: string
+ *                         example: "Công Nghệ Thông Tin"
  *                       Semester:
  *                         type: string
+ *                         example: "2024-2"
  *                       MaxStudents:
  *                         type: integer
+ *                         example: 40
  *                       EnrolledCount:
  *                         type: integer
+ *                         example: 35
  *                       Status:
  *                         type: string
+ *                         example: "Open"
  *                       IsFull:
- *                         type: boolean
+ *                         type: integer
+ *                         example: 0
  *       401:
  *         description: Token không hợp lệ hoặc hết hạn
  *       403:

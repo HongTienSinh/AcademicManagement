@@ -20,7 +20,7 @@ const { login } = require('../app/controllers/auth.controller');
  *                 example: admin
  *               password:
  *                 type: string
- *                 example: admin123
+ *                 example: 123
  *             required:
  *               - username
  *               - password

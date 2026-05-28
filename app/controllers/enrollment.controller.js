@@ -146,3 +146,147 @@ exports.enrollClass = async (req, res) => {
     });
   }
 };
+
+/**
+ * Nhập/cập nhật điểm học phần
+ * 
+ * Quy trình:
+ *   1. Kiểm tra giáo viên có đúng là người dạy lớp chứa EnrollmentId này không
+ *   2. Kiểm tra giá trị điểm (0-10) nếu có nhập
+ *   3. Gọi stored procedure sp_UpdateGrade
+ *   4. Database trigger sẽ tự tính AverageGrade = MidtermGrade*0.4 + FinalGrade*0.6
+ * 
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ */
+exports.updateGrade = async (req, res) => {
+  try {
+    const { EnrollmentId, MidtermGrade, FinalGrade } = req.body;
+    const TeacherId = req.user.UserId;
+
+    // ========================================================
+    // VALIDATE INPUT
+    // ========================================================
+    if (!EnrollmentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'EnrollmentId là bắt buộc',
+      });
+    }
+
+    // Kiểm tra giá trị điểm (nếu có nhập)
+    if (MidtermGrade !== null && MidtermGrade !== undefined) {
+      if (isNaN(MidtermGrade) || MidtermGrade < 0 || MidtermGrade > 10) {
+        return res.status(400).json({
+          success: false,
+          message: 'Điểm giữa kỳ phải từ 0 đến 10',
+        });
+      }
+    }
+
+    if (FinalGrade !== null && FinalGrade !== undefined) {
+      if (isNaN(FinalGrade) || FinalGrade < 0 || FinalGrade > 10) {
+        return res.status(400).json({
+          success: false,
+          message: 'Điểm cuối kỳ phải từ 0 đến 10',
+        });
+      }
+    }
+
+    const pool = await getConnection();
+
+    // ========================================================
+    // KIỂM TRA: Lấy thông tin lớp từ EnrollmentId
+    // ========================================================
+    const enrollResult = await pool.request()
+      .input('EnrollmentId', sql.Int, EnrollmentId)
+      .query(`
+        SELECT e.EnrollmentId, e.ClassId, c.TeacherId
+        FROM Enrollments e
+        JOIN Classes c ON e.ClassId = c.ClassId
+        WHERE e.EnrollmentId = @EnrollmentId
+      `);
+
+    if (!enrollResult.recordset || enrollResult.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Đăng ký không tồn tại',
+      });
+    }
+
+    const enrollData = enrollResult.recordset[0];
+
+    // ========================================================
+    // KIỂM TRA QUYỀN: Giáo viên có đúng là người dạy lớp này không?
+    // ========================================================
+    if (enrollData.TeacherId !== TeacherId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền nhập điểm cho lớp này',
+      });
+    }
+
+    // ========================================================
+    // GỌI STORED PROCEDURE: sp_UpdateGrade
+    // ========================================================
+    try {
+      await pool.request()
+        .input('EnrollmentId', sql.Int, EnrollmentId)
+        .input('MidtermGrade', sql.Float, MidtermGrade || null)
+        .input('FinalGrade', sql.Float, FinalGrade || null)
+        .input('TeacherUserId', sql.UniqueIdentifier, TeacherId)
+        .execute('sp_UpdateGrade');
+    } catch (spError) {
+      // Xử lý lỗi từ stored procedure
+      if (spError.number === 50024) {
+        return res.status(404).json({
+          success: false,
+          message: 'Đăng ký không tồn tại',
+        });
+      }
+      if (spError.number === 50025) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền nhập điểm cho lớp này',
+        });
+      }
+      throw spError;
+    }
+
+    // ========================================================
+    // LẤY DỮ LIỆU SAU CẬP NHẬT
+    // ========================================================
+    const updatedResult = await pool.request()
+      .input('EnrollmentId', sql.Int, EnrollmentId)
+      .query(`
+        SELECT e.EnrollmentId, e.ClassId, e.StudentId,
+               e.MidtermGrade, e.FinalGrade, e.AverageGrade
+        FROM Enrollments e
+        WHERE e.EnrollmentId = @EnrollmentId
+      `);
+
+    const updatedData = updatedResult.recordset[0];
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cập nhật điểm thành công',
+      data: {
+        EnrollmentId: updatedData.EnrollmentId,
+        ClassId: updatedData.ClassId,
+        StudentId: updatedData.StudentId,
+        MidtermGrade: updatedData.MidtermGrade,
+        FinalGrade: updatedData.FinalGrade,
+        AverageGrade: updatedData.AverageGrade,
+      },
+    });
+
+  } catch (error) {
+    console.error('❌ Lỗi khi cập nhật điểm:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi máy chủ khi cập nhật điểm',
+      error: error.message,
+    });
+  }
+};

@@ -8,6 +8,8 @@ const { connectDB } = require('./config/db.config');
 const authRoutes = require('./routes/auth.routes');
 const courseRoutes = require('./routes/course.routes');
 const enrollmentRoutes = require('./routes/enrollment.routes');
+const classRoutes = require('./routes/class.routes');
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,6 +32,28 @@ const swaggerOptions = {
       {
         url: `http://localhost:${PORT}`,
         description: 'Development Server',
+      },
+    ],
+    tags: [
+      {
+        name: 'Auth',
+        description: 'Xác thực và quản lý tài khoản người dùng',
+      },
+      {
+        name: 'Courses',
+        description: 'Quản lý môn học và thông tin môn học',
+      },
+      {
+        name: 'Enrollments',
+        description: 'Quản lý đăng ký học phần và điểm số',
+      },
+      {
+        name: 'Classes',
+        description: 'Quản lý lớp học phần và danh sách lớp',
+      },
+      {
+        name: 'System',
+        description: 'Kiểm tra trạng thái hệ thống',
       },
     ],
     components: {
@@ -55,6 +79,7 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
+app.use('/api/classes', classRoutes);
 
 app.get('/', (req, res) => {
   res.redirect('/api-docs');
