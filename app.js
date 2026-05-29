@@ -6,6 +6,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const { connectDB } = require('./config/db.config');
 
 const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 const courseRoutes = require('./routes/course.routes');
 const enrollmentRoutes = require('./routes/enrollment.routes');
 const classRoutes = require('./routes/class.routes');
@@ -38,6 +39,10 @@ const swaggerOptions = {
       {
         name: 'Auth',
         description: 'Xác thực và quản lý tài khoản người dùng',
+      },
+      {
+        name: 'Users',
+        description: 'Quản lý tài khoản người dùng (Admin only)',
       },
       {
         name: 'Courses',
@@ -85,6 +90,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
   res.redirect('/api-docs');
