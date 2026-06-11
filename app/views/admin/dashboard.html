@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin - Hệ Thống Quản Lý Học Vụ</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav class="navbar">
+        <div class="navbar-brand">🎓 Học Vụ Online</div>
+        <div class="navbar-menu">
+          <span>
+            <strong class="navbar-user-name">User</strong>
+            <small class="navbar-user-role text-muted" style="margin-left: 0.5rem;"></small>
+          </span>
+          <button id="logoutBtn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Đăng Xuất</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <aside>
+      <ul class="sidebar-menu">
+        <li><a href="#" class="menu-dashboard active">📊 Dashboard</a></li>
+        <li><a href="#" class="menu-users">👥 Quản Lý Người Dùng</a></li>
+        <li><a href="#" class="menu-departments">🏢 Quản Lý Khoa</a></li>
+        <li><a href="#" class="menu-courses">📚 Quản Lý Môn Học</a></li>
+        <li><a href="#" class="menu-classes">🎓 Quản Lý Lớp Học</a></li>
+      </ul>
+    </aside>
+
+    <main>
+      <div id="alertMessage" class="alert"></div>
+
+      <!-- Dashboard Section -->
+      <section id="dashboardSection" class="section">
+        <div class="card">
+          <h2 class="card-title">📊 Dashboard</h2>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="totalUsers">0</div>
+            <div class="stat-label">Tổng Người Dùng</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalDepartments">0</div>
+            <div class="stat-label">Tổng Khoa</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalCourses">0</div>
+            <div class="stat-label">Tổng Môn Học</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalClasses">0</div>
+            <div class="stat-label">Tổng Lớp Học</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Users Section -->
+      <section id="usersSection" class="section" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">👥 Quản Lý Người Dùng</h2>
+            <button class="btn btn-primary btn-sm" id="createUserBtn">+ Thêm Người Dùng</button>
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <input 
+              type="text" 
+              id="searchUsers" 
+              placeholder="Tìm kiếm theo tên hoặc username..." 
+              style="max-width: 300px;"
+            >
+          </div>
+
+          <table id="usersTable">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Họ Tên</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Trạng Thái</th>
+                <th>Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="6" class="text-center text-muted">Đang tải...</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pagination"></div>
+        </div>
+      </section>
+
+      <!-- Departments Section -->
+      <section id="departmentsSection" class="section" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🏢 Quản Lý Khoa</h2>
+            <button class="btn btn-primary btn-sm" id="createDeptBtn">+ Thêm Khoa</button>
+          </div>
+
+          <table id="departmentsTable">
+            <thead>
+              <tr>
+                <th>Mã Khoa</th>
+                <th>Tên Khoa</th>
+                <th>Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="3" class="text-center text-muted">Đang tải...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Courses Section -->
+      <section id="coursesSection" class="section" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">📚 Quản Lý Môn Học</h2>
+            <button class="btn btn-primary btn-sm" id="createCourseBtn">+ Thêm Môn Học</button>
+          </div>
+
+          <table id="coursesTable">
+            <thead>
+              <tr>
+                <th>Mã Môn</th>
+                <th>Tên Môn</th>
+                <th>Tín Chỉ</th>
+                <th>Khoa</th>
+                <th>Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="5" class="text-center text-muted">Đang tải...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Classes Section -->
+      <section id="classesSection" class="section" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🎓 Quản Lý Lớp Học</h2>
+            <button class="btn btn-primary btn-sm" id="createClassBtn">+ Mở Lớp Mới</button>
+          </div>
+
+          <table id="classesTable">
+            <thead>
+              <tr>
+                <th>Mã Lớp</th>
+                <th>Môn Học</th>
+                <th>Giảng Viên</th>
+                <th>Học Kỳ</th>
+                <th>Sĩ Số</th>
+                <th>Trạng Thái</th>
+                <th>Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="7" class="text-center text-muted">Đang tải...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- User Modal -->
+  <div id="userModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="userModalTitle">Thêm Người Dùng</h3>
+        <button class="modal-close" onclick="FormUtil.closeModal('userModal')">&times;</button>
+      </div>
+      <form id="userForm">
+        <div class="form-group">
+          <label>Tên Đăng Nhập</label>
+          <input type="text" name="username" required>
+        </div>
+        <div class="form-group">
+          <label>Mật Khẩu</label>
+          <input type="password" name="password" required>
+        </div>
+        <div class="form-group">
+          <label>Họ Tên</label>
+          <input type="text" name="fullName" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <select name="roleId" required>
+            <option value="">-- Chọn Role --</option>
+            <option value="1">Admin</option>
+            <option value="2">Teacher</option>
+            <option value="3">Student</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="FormUtil.closeModal('userModal')">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/public/js/api.js"></script>
+  <script src="/public/js/auth.js"></script>
+  <script>
+    // Check authentication
+    Auth.checkAuth();
+    if (!Auth.isAdmin()) {
+      window.location.href = '/login.html';
+    }
+
+    // Set user info
+    const user = Auth.getUser();
+    UI.setNavbarUser(user);
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      if (confirm('Bạn có chắc muốn đăng xuất?')) {
+        Auth.logout();
+      }
+    });
+
+    // Menu navigation
+    let currentPage = 'dashboard';
+
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const menuClass = link.className.split('-')[1];
+        switchPage(menuClass);
+      });
+    });
+
+    function switchPage(page) {
+      document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+      document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+
+      currentPage = page;
+
+      if (page === 'dashboard') {
+        document.getElementById('dashboardSection').style.display = 'block';
+        document.querySelector('.menu-dashboard').classList.add('active');
+        loadDashboardStats();
+      } else if (page === 'users') {
+        document.getElementById('usersSection').style.display = 'block';
+        document.querySelector('.menu-users').classList.add('active');
+        loadUsers();
+      } else if (page === 'departments') {
+        document.getElementById('departmentsSection').style.display = 'block';
+        document.querySelector('.menu-departments').classList.add('active');
+        loadDepartments();
+      } else if (page === 'courses') {
+        document.getElementById('coursesSection').style.display = 'block';
+        document.querySelector('.menu-courses').classList.add('active');
+        loadCourses();
+      } else if (page === 'classes') {
+        document.getElementById('classesSection').style.display = 'block';
+        document.querySelector('.menu-classes').classList.add('active');
+        loadClasses();
+      }
+    }
+
+    // Load Dashboard Stats
+    async function loadDashboardStats() {
+      try {
+        // Mock data for now
+        document.getElementById('totalUsers').textContent = '45';
+        document.getElementById('totalDepartments').textContent = '8';
+        document.getElementById('totalCourses').textContent = '32';
+        document.getElementById('totalClasses').textContent = '24';
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    }
+
+    // Load Users
+    let currentUserPage = 1;
+    let currentUserLimit = 10;
+    let currentUserSearch = '';
+
+    async function loadUsers() {
+      try {
+        const data = await apiClient.getUsers(currentUserPage, currentUserLimit, currentUserSearch);
+        
+        const columns = [
+          { field: 'Username' },
+          { field: 'FullName' },
+          { field: 'Email' },
+          { field: 'RoleName' },
+          {
+            field: 'IsActive',
+            render: (item) => item.IsActive ? '<span class="badge badge-success">Hoạt Động</span>' : '<span class="badge badge-danger">Bị Khóa</span>'
+          },
+          {
+            render: (item) => `
+              <button class="btn btn-sm btn-secondary" onclick="editUser('${item.UserId}')">Sửa</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteUser('${item.UserId}')">Xóa</button>
+            `
+          }
+        ];
+
+        TableUtil.renderTable('usersTable', data.data, columns);
+        TableUtil.renderPagination(data.pagination.totalPages, data.pagination.currentPage, (page) => {
+          currentUserPage = page;
+          loadUsers();
+        });
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    }
+
+    // Search Users
+    document.getElementById('searchUsers').addEventListener('keyup', debounce((e) => {
+      currentUserSearch = e.target.value;
+      currentUserPage = 1;
+      loadUsers();
+    }, 300));
+
+    // Create User
+    document.getElementById('createUserBtn').addEventListener('click', () => {
+      document.getElementById('userForm').reset();
+      document.getElementById('userModalTitle').textContent = 'Thêm Người Dùng';
+      FormUtil.openModal('userModal');
+    });
+
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = FormUtil.getFormData('#userForm');
+      
+      try {
+        await apiClient.createUser({
+          username: formData.username,
+          password: formData.password,
+          fullName: formData.fullName,
+          email: formData.email,
+          roleId: parseInt(formData.roleId)
+        });
+        UI.showAlert('✓ Tạo người dùng thành công!', 'success');
+        FormUtil.closeModal('userModal');
+        loadUsers();
+      } catch (error) {
+        UI.showAlert('✗ ' + error.message, 'danger');
+      }
+    });
+
+    // Load Departments
+    async function loadDepartments() {
+      try {
+        const data = await apiClient.getDepartments();
+        
+        const columns = [
+          { field: 'DepartmentCode' },
+          { field: 'DepartmentName' },
+          {
+            render: (item) => `
+              <button class="btn btn-sm btn-secondary" onclick="editDept('${item.DepartmentId}')">Sửa</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteDept('${item.DepartmentId}')">Xóa</button>
+            `
+          }
+        ];
+
+        TableUtil.renderTable('departmentsTable', data.data || [], columns);
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    }
+
+    // Load Courses
+    async function loadCourses() {
+      try {
+        const data = await apiClient.getCourses();
+        
+        const columns = [
+          { field: 'CourseCode' },
+          { field: 'CourseName' },
+          { field: 'Credits' },
+          { field: 'DepartmentName' },
+          {
+            render: (item) => `
+              <button class="btn btn-sm btn-secondary" onclick="editCourse('${item.CourseId}')">Sửa</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteCourse('${item.CourseId}')">Xóa</button>
+            `
+          }
+        ];
+
+        TableUtil.renderTable('coursesTable', data.data || [], columns);
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    }
+
+    // Load Classes
+    async function loadClasses() {
+      try {
+        const data = await apiClient.getClasses();
+        
+        const columns = [
+          { field: 'ClassCode' },
+          { field: 'CourseName' },
+          { field: 'TeacherName' },
+          { field: 'Semester' },
+          { 
+            render: (item) => `${item.EnrolledCount || 0}/${item.MaxStudents || 0}`
+          },
+          {
+            field: 'Status',
+            render: (item) => getStatusBadge(item.Status)
+          },
+          {
+            render: (item) => `
+              <button class="btn btn-sm btn-secondary" onclick="editClass('${item.ClassId}')">Sửa</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteClass('${item.ClassId}')">Xóa</button>
+            `
+          }
+        ];
+
+        TableUtil.renderTable('classesTable', data.data || [], columns);
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    }
+
+    // Edit/Delete functions (will be implemented)
+    function editUser(id) { alert('Edit user: ' + id); }
+    function deleteUser(id) {
+      if (confirm('Bạn có chắc muốn xóa người dùng này?')) {
+        apiClient.deleteUser(id).then(() => {
+          UI.showAlert('✓ Xóa thành công!', 'success');
+          loadUsers();
+        }).catch(e => UI.showAlert('✗ ' + e.message, 'danger'));
+      }
+    }
+
+    function editDept(id) { alert('Edit dept: ' + id); }
+    function deleteDept(id) { alert('Delete dept: ' + id); }
+
+    function editCourse(id) { alert('Edit course: ' + id); }
+    function deleteCourse(id) { alert('Delete course: ' + id); }
+
+    function editClass(id) { alert('Edit class: ' + id); }
+    function deleteClass(id) { alert('Delete class: ' + id); }
+
+    // Initial load
+    loadUsers();
+  </script>
+</body>
+</html>

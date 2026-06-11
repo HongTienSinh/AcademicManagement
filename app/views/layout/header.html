@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav class="navbar">
+        <div class="navbar-brand">🎓 Học Vụ Online</div>
+        <div class="navbar-menu">
+          <span>
+            <strong class="navbar-user-name">User</strong>
+            <small class="navbar-user-role text-muted" style="margin-left: 0.5rem;"></small>
+          </span>
+          <button id="logoutBtn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Đăng Xuất</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <aside id="sidebar">
+      <!-- Sidebar content sẽ được thêm theo role -->
+    </aside>
+
+    <main>
+      <div id="alertMessage" class="alert"></div>
+      <!-- Main content sẽ được thêm theo trang -->
+    </main>
+  </div>
+
+  <script src="/public/js/api.js"></script>
+  <script src="/public/js/auth.js"></script>
+  <script>
+    // Check authentication
+    Auth.checkAuth();
+
+    // Set user info in navbar
+    const user = Auth.getUser();
+    UI.setNavbarUser(user);
+
+    // Logout button
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      if (confirm('Bạn có chắc muốn đăng xuất?')) {
+        Auth.logout();
+      }
+    });
+  </script>
+</body>
+</html>

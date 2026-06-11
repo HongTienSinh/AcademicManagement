@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { enrollClass, updateGrade } = require('../app/controllers/enrollment.controller');
+const { enrollClass, updateGrade, cancelEnrollment, getClassStudents } = require('../app/controllers/enrollment.controller');
 const { verifyToken, isTeacher } = require('../middlewares/auth.middleware');
 
 /**
@@ -316,5 +316,55 @@ router.post('/api/enrollments', verifyToken, enrollClass);
  *                   type: string
  */
 router.put('/api/enrollments/grades', verifyToken, isTeacher, updateGrade);
+
+/**
+ * @swagger
+ * /api/enrollments/{enrollmentId}:
+ *   delete:
+ *     tags:
+ *       - Enrollments
+ *     summary: Hủy đăng ký học phần
+ *     description: Sinh viên hủy đăng ký khỏi một lớp. Lớp phải vẫn đang mở.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: enrollmentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Hủy đăng ký thành công
+ *       404:
+ *         description: Đăng ký không tồn tại
+ *       403:
+ *         description: Không có quyền hủy đăng ký
+ */
+router.delete('/api/enrollments/:enrollmentId', verifyToken, cancelEnrollment);
+
+/**
+ * @swagger
+ * /api/enrollments/class/{classId}/students:
+ *   get:
+ *     tags:
+ *       - Enrollments
+ *     summary: Xem danh sách sinh viên của lớp
+ *     description: Giảng viên hoặc Admin xem danh sách sinh viên đã đăng ký lớp.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Lấy danh sách thành công
+ *       404:
+ *         description: Lớp không tồn tại
+ */
+router.get('/api/enrollments/class/:classId/students', verifyToken, getClassStudents);
 
 module.exports = router;

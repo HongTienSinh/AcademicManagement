@@ -20,6 +20,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve Static Files
+app.use(express.static('public'));
+app.use(express.static('app/views'));
+
 // Swagger Configuration
 const swaggerOptions = {
   definition: {
@@ -86,6 +90,17 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Serve Frontend Routes
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/login.html');
+});
+
+app.get('/login', (req, res) => {
+  res.sendFile(__dirname + '/login.html');
+});
+
+// API Routes
 app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/classes', classRoutes);

@@ -253,39 +253,159 @@ exports.updateGrade = async (req, res) => {
       throw spError;
     }
 
-    // ========================================================
-    // LẤY DỮ LIỆU SAU CẬP NHẬT
-    // ========================================================
-    const updatedResult = await pool.request()
-      .input('EnrollmentId', sql.Int, EnrollmentId)
-      .query(`
-        SELECT e.EnrollmentId, e.ClassId, e.StudentId,
-               e.MidtermGrade, e.FinalGrade, e.AverageGrade
-        FROM Enrollments e
-        WHERE e.EnrollmentId = @EnrollmentId
-      `);
-
-    const updatedData = updatedResult.recordset[0];
-
     return res.status(200).json({
       success: true,
       message: 'Cập nhật điểm thành công',
-      data: {
-        EnrollmentId: updatedData.EnrollmentId,
-        ClassId: updatedData.ClassId,
-        StudentId: updatedData.StudentId,
-        MidtermGrade: updatedData.MidtermGrade,
-        FinalGrade: updatedData.FinalGrade,
-        AverageGrade: updatedData.AverageGrade,
-      },
     });
-
   } catch (error) {
-    console.error('❌ Lỗi khi cập nhật điểm:', error);
-
+    console.error('Lỗi trong updateGrade:', error.message);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi cập nhật điểm',
+      message: 'Đã xảy ra lỗi khi cập nhật điểm',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Hủy đăng ký học phần
+ * Yêu cầu:
+ *   - req.params.enrollmentId: ID của đăng ký
+ *   - req.user.UserId: ID của sinh viên (từ JWT token)
+ * Kiểm tra:
+ *   1. Đăng ký tồn tại
+ *   2. Sinh viên là chủ nhân của đăng ký này
+ *   3. Lớp vẫn đang mở
+ */
+exports.cancelEnrollment = async (req, res) => {
+  try {
+    const { enrollmentId } = req.params;
+    const StudentId = req.user.UserId;
+
+    // Validate
+    if (!enrollmentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'EnrollmentId là bắt buộc',
+      });
+    }
+
+    if (!StudentId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Không tìm thấy thông tin sinh viên',
+      });
+    }
+
+    const pool = await getConnection();
+
+    // Gọi stored procedure
+    try {
+      await pool.request()
+        .input('EnrollmentId', sql.Int, enrollmentId)
+        .input('StudentId', sql.UniqueIdentifier, StudentId)
+        .execute('sp_CancelEnrollment');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Hủy đăng ký thành công',
+      });
+    } catch (spError) {
+      if (spError.number === 50050) {
+        return res.status(404).json({
+          success: false,
+          message: 'Đăng ký không tồn tại',
+        });
+      }
+      if (spError.number === 50051) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền hủy đăng ký này',
+        });
+      }
+      if (spError.number === 50052) {
+        return res.status(400).json({
+          success: false,
+          message: 'Không thể hủy đăng ký khi lớp đã đóng',
+        });
+      }
+      throw spError;
+    }
+  } catch (error) {
+    console.error('Lỗi trong cancelEnrollment:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Đã xảy ra lỗi khi hủy đăng ký',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Lấy danh sách sinh viên của một lớp
+ * Chỉ giáo viên dạy lớp hoặc admin mới có thể xem
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ */
+exports.getClassStudents = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const UserId = req.user.UserId;
+    const Role = req.user.Role;
+
+    // Validate
+    if (!classId) {
+      return res.status(400).json({
+        success: false,
+        message: 'ClassId là bắt buộc',
+      });
+    }
+
+    const pool = await getConnection();
+
+    // Kiểm tra quyền: chỉ Teacher (dạy lớp này) hoặc Admin mới được xem
+    if (Role !== 'Admin') {
+      const classCheckResult = await pool.request()
+        .input('ClassId', sql.Int, classId)
+        .input('TeacherId', sql.UniqueIdentifier, UserId)
+        .query(`
+          SELECT ClassId FROM Classes
+          WHERE ClassId = @ClassId AND TeacherId = @TeacherId
+        `);
+
+      if (!classCheckResult.recordset || classCheckResult.recordset.length === 0) {
+        return res.status(403).json({
+          success: false,
+          message: 'Bạn không có quyền xem danh sách sinh viên của lớp này',
+        });
+      }
+    }
+
+    // Gọi stored procedure
+    try {
+      const result = await pool.request()
+        .input('ClassId', sql.Int, classId)
+        .execute('sp_GetClassStudents');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Lấy danh sách sinh viên thành công',
+        data: result.recordset || [],
+      });
+    } catch (spError) {
+      if (spError.number === 50060) {
+        return res.status(404).json({
+          success: false,
+          message: 'Lớp không tồn tại',
+        });
+      }
+      throw spError;
+    }
+  } catch (error) {
+    console.error('Lỗi trong getClassStudents:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Đã xảy ra lỗi khi lấy danh sách sinh viên',
       error: error.message,
     });
   }

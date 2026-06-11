@@ -1,10 +1,56 @@
-/root
-├── /app
-│   ├── /models      # Chứa các file định nghĩa dữ liệu (Class, Entity)
-│   ├── /views       # Chứa các file hiển thị (Template, HTML)
-│   └── /controllers # Chứa các logic điều hướng
-├── /config          # Cấu hình hệ thống, kết nối database
-├── /middleware      # Cấu hình middleware cho cấu trúc web MVC
-├── /public          # File tĩnh (CSS, JS, Hình ảnh)
-├── /routes          # Định nghĩa các đường dẫn (URL)
-└── /vendor          # Thư viện bên thứ ba
+Root
+├── app.js
+├── login.html
+├── package.json
+│
+├── app/
+│   ├── controllers/
+│   │   ├── auth.controller.js
+│   │   ├── class.controller.js
+│   │   ├── course.controller.js
+│   │   ├── enrollment.controller.js
+│   │   ├── student.controller.js
+│   │   └── user.controller.js
+│   ├── models/
+│   └── views/
+│       ├── admin/
+│       │   └── dashboard.html
+│       ├── layout/
+│       │   └── header.html
+│       ├── student/
+│       │   └── dashboard.html
+│       └── teacher/
+│           └── dashboard.html
+│
+├── config/
+│   └── db.config.js
+│
+├── middlewares/
+│   └── auth.middleware.js
+│
+├── public/
+│   ├── css/
+│   │   └── style.css
+│   └── js/
+│       ├── api.js
+│       └── auth.js
+│
+├── request/
+│   └── TemporaryNote.md
+│
+├── routes/
+│   ├── auth.routes.js
+│   ├── class.routes.js
+│   ├── course.routes.js
+│   ├── enrollment.routes.js
+│   ├── index.js
+│   ├── student.routes.js
+│   └── user.routes.js
+│
+├── rules/
+│   ├── CodeGenerationRules.txt
+│   ├── DatabaseGuidelineForMapping.txt
+│   ├── ProcedureScript.sql
+│   └── ProjectStructureRules.txt
+│
+└── vendor/

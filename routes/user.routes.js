@@ -7,17 +7,38 @@ const {
   updateUser,
   updateUserStatus,
   deleteUser,
-} = require('../controllers/user.controller');
-const { verifyToken, isAdmin } = require('../../middlewares/auth.middleware');
+} = require('../app/controllers/user.controller');
+const { verifyToken, isAdmin } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
  * /api/users:
  *   get:
- *     summary: Lấy danh sách tất cả người dùng
+ *     summary: Lấy danh sách tất cả người dùng (có phân trang và tìm kiếm)
  *     tags: [Users]
  *     security:
  *       - BearerAuth: []
+ *     parameters:
+ *       - name: page
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Số trang (mặc định 1)
+ *       - name: limit
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số bản ghi trên một trang (mặc định 10)
+ *       - name: search
+ *         in: query
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Tìm kiếm theo FullName hoặc Username
  *     responses:
  *       200:
  *         description: Lấy danh sách thành công
@@ -47,8 +68,20 @@ const { verifyToken, isAdmin } = require('../../middlewares/auth.middleware');
  *                         type: integer
  *                       RoleName:
  *                         type: string
- *                 total:
- *                   type: integer
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     totalItems:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                 search:
+ *                   type: string
+ *                   description: Từ khóa tìm kiếm (nếu có)
  *       403:
  *         description: Không có quyền (yêu cầu Admin)
  */

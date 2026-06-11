@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Sinh Viên - Hệ Thống Quản Lý Học Vụ</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav class="navbar">
+        <div class="navbar-brand">🎓 Học Vụ Online</div>
+        <div class="navbar-menu">
+          <span>
+            <strong class="navbar-user-name">User</strong>
+            <small class="navbar-user-role text-muted" style="margin-left: 0.5rem;"></small>
+          </span>
+          <button id="logoutBtn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Đăng Xuất</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <aside>
+      <ul class="sidebar-menu">
+        <li><a href="#" class="menu-dashboard active">📊 Dashboard</a></li>
+        <li><a href="#" class="menu-register">📝 Đăng Ký Học Phần</a></li>
+        <li><a href="#" class="menu-grades">📚 Bảng Điểm</a></li>
+      </ul>
+    </aside>
+
+    <main>
+      <div id="alertMessage" class="alert"></div>
+
+      <!-- Dashboard Section -->
+      <section id="dashboardSection" class="section">
+        <div class="card">
+          <h2 class="card-title">📊 Dashboard Sinh Viên</h2>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="totalEnrolled">0</div>
+            <div class="stat-label">Lớp Đã Đăng Ký</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalCredits">0</div>
+            <div class="stat-label">Tổng Tín Chỉ</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="avgGrade">--</div>
+            <div class="stat-label">Điểm Trung Bình</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Register Classes Section -->
+      <section id="registerSection" class="section" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">📝 Đăng Ký Học Phần</h2>
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <input 
+              type="text" 
+              id="searchClasses" 
+              placeholder="Tìm kiếm theo tên môn, mã lớp..." 
+              style="max-width: 300px;"
+            >
+          </div>
+
+          <table id="availableClassesTable">
+            <thead>
+              <tr>
+                <th>Mã Lớp</th>
+                <th>Môn Học</th>
+                <th>Giảng Viên</th>
+                <th>Học Kỳ</th>
+                <th>Sĩ Số</th>
+                <th>Trạng Thái</th>
+                <th>Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="7" class="text-center text-muted">Đang tải...</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pagination"></div>
+        </div>
+      </section>
+
+      <!-- My Grades Section -->
+      <section id="gradesSection" class="section" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">📚 Bảng Điểm Cá Nhân</h2>
+          </div>
+
+          <table id="myGradesTable">
+            <thead>
+              <tr>
+                <th>Mã Môn</th>
+                <th>Tên Môn</th>
+                <th>Tín Chỉ</th>
+                <th>Học Kỳ</th>
+                <th>Điểm Giữa Kỳ</th>
+                <th>Điểm Cuối Kỳ</th>
+                <th>Điểm Trung Bình</th>
+                <th>Kết Quả</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="8" class="text-center text-muted">Đang tải...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/public/js/api.js"></script>
+  <script src="/public/js/auth.js"></script>
+  <script>
+    // Check authentication
+    Auth.checkAuth();
+    if (!Auth.isStudent()) {
+      window.location.href = '/login.html';
+    }
+
+    // Set user info
+    const user = Auth.getUser();
+    UI.setNavbarUser(user);
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      if (confirm('Bạn có chắc muốn đăng xuất?')) {
+        Auth.logout();
+      }
+    });
+
+    // Menu navigation
+    let currentRegisterPage = 1;
+    let currentRegisterLimit = 10;
+    let currentRegisterSearch = '';
+
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const menuClass = link.className.split('-')[1];
+        switchPage(menuClass);
+      });
+    });
+
+    function switchPage(page) {
+      document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+      document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+
+      if (page === 'dashboard') {
+        document.getElementById('dashboardSection').style.display = 'block';
+        document.querySelector('.menu-dashboard').classList.add('active');
+        loadDashboardStats();
+      } else if (page === 'register') {
+        document.getElementById('registerSection').style.display = 'block';
+        document.querySelector('.menu-register').classList.add('active');
+        loadAvailableClasses();
+      } else if (page === 'grades') {
+        document.getElementById('gradesSection').style.display = 'block';
+        document.querySelector('.menu-grades').classList.add('active');
+        loadMyGrades();
+      }
+    }
+
+    // Load Dashboard Stats
+    async function loadDashboardStats() {
+      try {
+        // Mock data - should connect to backend
+        document.getElementById('totalEnrolled').textContent = '5';
+        document.getElementById('totalCredits').textContent = '15';
+        document.getElementById('avgGrade').textContent = '7.5';
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    }
+
+    // Load Available Classes for Registration
+    async function loadAvailableClasses() {
+      try {
+        const data = await apiClient.getClasses();
+        
+        const columns = [
+          { field: 'ClassCode' },
+          { field: 'CourseName' },
+          { field: 'TeacherName' },
+          { field: 'Semester' },
+          { 
+            render: (item) => {
+              const enrolled = item.EnrolledCount || 0;
+              const max = item.MaxStudents || 0;
+              return enrolled >= max ? '🔒 Đủ' : `${enrolled}/${max}`;
+            }
+          },
+          {
+            field: 'Status',
+            render: (item) => getStatusBadge(item.Status)
+          },
+          {
+            render: (item) => {
+              const enrolled = item.EnrolledCount || 0;
+              const max = item.MaxStudents || 0;
+              const isFull = enrolled >= max;
+              const isOpenStatus = item.Status === 'Open';
+              const isDisabled = isFull || !isOpenStatus;
+              
+              return `<button class="btn btn-sm btn-success" onclick="enrollClass('${item.ClassId}')" ${isDisabled ? 'disabled' : ''}>Đăng Ký</button>`;
+            }
+          }
+        ];
+
+        TableUtil.renderTable('availableClassesTable', data.data || [], columns);
+        TableUtil.renderPagination(
+          Math.ceil((data.data?.length || 0) / 10), 
+          currentRegisterPage, 
+          (page) => {
+            currentRegisterPage = page;
+            loadAvailableClasses();
+          }
+        );
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    }
+
+    // Search Classes
+    document.getElementById('searchClasses').addEventListener('keyup', debounce((e) => {
+      currentRegisterSearch = e.target.value;
+      currentRegisterPage = 1;
+      loadAvailableClasses();
+    }, 300));
+
+    // Enroll Class
+    async function enrollClass(classId) {
+      if (!confirm('Bạn chắc chắn muốn đăng ký lớp này?')) return;
+
+      try {
+        await apiClient.enrollStudent(classId);
+        UI.showAlert('✓ Đăng ký lớp thành công!', 'success');
+        loadAvailableClasses();
+        loadDashboardStats();
+      } catch (error) {
+        UI.showAlert('✗ ' + error.message, 'danger');
+      }
+    }
+
+    // Load My Grades
+    async function loadMyGrades() {
+      try {
+        const user = Auth.getUser();
+        // This would need a specific endpoint for student grades
+        // For now, using enrollments as a mock
+        const data = await apiClient.getEnrollments('');
+        
+        const columns = [
+          { field: 'CourseCode' },
+          { field: 'CourseName' },
+          { field: 'Credits' },
+          { field: 'Semester' },
+          {
+            field: 'MidtermGrade',
+            render: (item) => getGradeBadge(item.MidtermGrade)
+          },
+          {
+            field: 'FinalGrade',
+            render: (item) => getGradeBadge(item.FinalGrade)
+          },
+          {
+            field: 'AverageGrade',
+            render: (item) => getGradeBadge(item.AverageGrade)
+          },
+          {
+            render: (item) => {
+              const grade = item.AverageGrade;
+              if (grade === null || grade === undefined) return '<span class="badge badge-warning">Chưa có</span>';
+              if (grade >= 4) return '<span class="badge badge-success">Đạt ✓</span>';
+              return '<span class="badge badge-danger">Không Đạt ✗</span>';
+            }
+          }
+        ];
+
+        TableUtil.renderTable('myGradesTable', data.data || [], columns);
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    }
+
+    // Initial load
+    loadDashboardStats();
+  </script>
+</body>
+</html>

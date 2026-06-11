@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Giảng Viên - Hệ Thống Quản Lý Học Vụ</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav class="navbar">
+        <div class="navbar-brand">🎓 Học Vụ Online</div>
+        <div class="navbar-menu">
+          <span>
+            <strong class="navbar-user-name">User</strong>
+            <small class="navbar-user-role text-muted" style="margin-left: 0.5rem;"></small>
+          </span>
+          <button id="logoutBtn" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Đăng Xuất</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <div class="main-layout">
+    <aside>
+      <ul class="sidebar-menu">
+        <li><a href="#" class="menu-dashboard active">📊 Dashboard</a></li>
+        <li><a href="#" class="menu-classes">🎓 Lớp Dạy</a></li>
+        <li><a href="#" class="menu-grades">📝 Nhập Điểm</a></li>
+      </ul>
+    </aside>
+
+    <main>
+      <div id="alertMessage" class="alert"></div>
+
+      <!-- Dashboard Section -->
+      <section id="dashboardSection" class="section">
+        <div class="card">
+          <h2 class="card-title">📊 Dashboard Giảng Viên</h2>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="totalClasses">0</div>
+            <div class="stat-label">Lớp Dạy</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalStudents">0</div>
+            <div class="stat-label">Tổng Sinh Viên</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="classesByStatus">0</div>
+            <div class="stat-label">Lớp Đang Mở</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- My Classes Section -->
+      <section id="classesSection" class="section" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🎓 Danh Sách Lớp Dạy</h2>
+          </div>
+
+          <table id="classesTable">
+            <thead>
+              <tr>
+                <th>Mã Lớp</th>
+                <th>Môn Học</th>
+                <th>Học Kỳ</th>
+                <th>Sĩ Số</th>
+                <th>Trạng Thái</th>
+                <th>Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="6" class="text-center text-muted">Đang tải...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Grade Entry Section -->
+      <section id="gradesSection" class="section" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">📝 Nhập Điểm</h2>
+          </div>
+
+          <div class="form-group">
+            <label for="classSelect">Chọn Lớp</label>
+            <select id="classSelect">
+              <option value="">-- Chọn Lớp --</option>
+            </select>
+          </div>
+
+          <table id="gradesTable">
+            <thead>
+              <tr>
+                <th>Sinh Viên</th>
+                <th>Điểm Giữa Kỳ</th>
+                <th>Điểm Cuối Kỳ</th>
+                <th>Điểm Trung Bình</th>
+                <th>Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="5" class="text-center text-muted">Chọn lớp để xem danh sách</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Grade Modal -->
+  <div id="gradeModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Nhập Điểm</h3>
+        <button class="modal-close" onclick="FormUtil.closeModal('gradeModal')">&times;</button>
+      </div>
+      <form id="gradeForm">
+        <div class="form-group">
+          <label>Sinh Viên</label>
+          <input type="text" id="studentName" disabled>
+        </div>
+        <div class="form-group">
+          <label>Điểm Giữa Kỳ (0-10)</label>
+          <input type="number" name="midtermGrade" min="0" max="10" step="0.5">
+        </div>
+        <div class="form-group">
+          <label>Điểm Cuối Kỳ (0-10)</label>
+          <input type="number" name="finalGrade" min="0" max="10" step="0.5">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="FormUtil.closeModal('gradeModal')">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/public/js/api.js"></script>
+  <script src="/public/js/auth.js"></script>
+  <script>
+    // Check authentication
+    Auth.checkAuth();
+    if (!Auth.isTeacher()) {
+      window.location.href = '/login.html';
+    }
+
+    // Set user info
+    const user = Auth.getUser();
+    UI.setNavbarUser(user);
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      if (confirm('Bạn có chắc muốn đăng xuất?')) {
+        Auth.logout();
+      }
+    });
+
+    // Menu navigation
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const menuClass = link.className.split('-')[1];
+        switchPage(menuClass);
+      });
+    });
+
+    function switchPage(page) {
+      document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+      document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+
+      if (page === 'dashboard') {
+        document.getElementById('dashboardSection').style.display = 'block';
+        document.querySelector('.menu-dashboard').classList.add('active');
+        loadDashboardStats();
+      } else if (page === 'classes') {
+        document.getElementById('classesSection').style.display = 'block';
+        document.querySelector('.menu-classes').classList.add('active');
+        loadMyClasses();
+      } else if (page === 'grades') {
+        document.getElementById('gradesSection').style.display = 'block';
+        document.querySelector('.menu-grades').classList.add('active');
+        loadMyClasses();
+      }
+    }
+
+    // Load Dashboard Stats
+    async function loadDashboardStats() {
+      try {
+        // Mock data - should connect to backend
+        document.getElementById('totalClasses').textContent = '4';
+        document.getElementById('totalStudents').textContent = '120';
+        document.getElementById('classesByStatus').textContent = '3';
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    }
+
+    // Load My Classes
+    async function loadMyClasses() {
+      try {
+        const data = await apiClient.getClasses();
+        
+        const columns = [
+          { field: 'ClassCode' },
+          { field: 'CourseName' },
+          { field: 'Semester' },
+          { 
+            render: (item) => `${item.EnrolledCount || 0}/${item.MaxStudents || 0}`
+          },
+          {
+            field: 'Status',
+            render: (item) => getStatusBadge(item.Status)
+          },
+          {
+            render: (item) => `
+              <button class="btn btn-sm btn-secondary" onclick="viewStudents('${item.ClassId}')">Xem SV</button>
+            `
+          }
+        ];
+
+        TableUtil.renderTable('classesTable', data.data || [], columns);
+
+        // Populate class select
+        const select = document.getElementById('classSelect');
+        select.innerHTML = '<option value="">-- Chọn Lớp --</option>';
+        (data.data || []).forEach(cls => {
+          const option = document.createElement('option');
+          option.value = cls.ClassId;
+          option.textContent = `${cls.ClassCode} - ${cls.CourseName}`;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    }
+
+    // Load Students for Grade Entry
+    document.getElementById('classSelect').addEventListener('change', async (e) => {
+      const classId = e.target.value;
+      if (!classId) return;
+
+      try {
+        const data = await apiClient.getEnrollments(classId);
+        
+        const columns = [
+          { field: 'StudentName' },
+          {
+            field: 'MidtermGrade',
+            render: (item) => getGradeBadge(item.MidtermGrade)
+          },
+          {
+            field: 'FinalGrade',
+            render: (item) => getGradeBadge(item.FinalGrade)
+          },
+          {
+            field: 'AverageGrade',
+            render: (item) => getGradeBadge(item.AverageGrade)
+          },
+          {
+            render: (item) => `
+              <button class="btn btn-sm btn-primary" onclick="editGrade('${item.EnrollmentId}', '${item.StudentName}')">Nhập Điểm</button>
+            `
+          }
+        ];
+
+        TableUtil.renderTable('gradesTable', data.data || [], columns);
+      } catch (error) {
+        UI.showAlert(error.message, 'danger');
+      }
+    });
+
+    // Edit Grade
+    let currentEnrollmentId = null;
+    function editGrade(enrollmentId, studentName) {
+      currentEnrollmentId = enrollmentId;
+      document.getElementById('studentName').value = studentName;
+      FormUtil.openModal('gradeModal');
+    }
+
+    document.getElementById('gradeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = FormUtil.getFormData('#gradeForm');
+      
+      try {
+        const classId = document.getElementById('classSelect').value;
+        await apiClient.updateGrade(
+          currentEnrollmentId,
+          formData.midtermGrade ? parseFloat(formData.midtermGrade) : null,
+          formData.finalGrade ? parseFloat(formData.finalGrade) : null
+        );
+        UI.showAlert('✓ Cập nhật điểm thành công!', 'success');
+        FormUtil.closeModal('gradeModal');
+        apiClient.getEnrollments(classId).then(data => {
+          const columns = [
+            { field: 'StudentName' },
+            { field: 'MidtermGrade', render: (item) => getGradeBadge(item.MidtermGrade) },
+            { field: 'FinalGrade', render: (item) => getGradeBadge(item.FinalGrade) },
+            { field: 'AverageGrade', render: (item) => getGradeBadge(item.AverageGrade) },
+            { render: (item) => `<button class="btn btn-sm btn-primary" onclick="editGrade('${item.EnrollmentId}', '${item.StudentName}')">Nhập Điểm</button>` }
+          ];
+          TableUtil.renderTable('gradesTable', data.data || [], columns);
+        });
+      } catch (error) {
+        UI.showAlert('✗ ' + error.message, 'danger');
+      }
+    });
+
+    function viewStudents(classId) {
+      alert('View students of class: ' + classId);
+    }
+
+    // Initial load
+    loadDashboardStats();
+  </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Nhập - Hệ Thống Quản Lý Học Vụ</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <h1 class="login-title">🎓 Học Vụ Online</h1>
+      
+      <div id="alertMessage" class="alert"></div>
+
+      <form id="loginForm" class="login-form">
+        <div class="form-group">
+          <label for="username">Tên Đăng Nhập</label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            placeholder="Nhập tên đăng nhập"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mật Khẩu</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            placeholder="Nhập mật khẩu"
+            required
+          >
+        </div>
+
+        <button type="submit">Đăng Nhập</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/public/js/api.js"></script>
+  <script src="/public/js/auth.js"></script>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const alertEl = document.getElementById('alertMessage');
+
+      try {
+        const user = await Auth.login(username, password);
+        alertEl.className = 'alert alert-success show';
+        alertEl.textContent = '✓ Đăng nhập thành công!';
+        
+        setTimeout(() => {
+          Auth.redirectToDashboard();
+        }, 1000);
+      } catch (error) {
+        alertEl.className = 'alert alert-danger show';
+        alertEl.textContent = '✗ ' + error.message;
+      }
+    });
+
+    // Nếu đã đăng nhập, chuyển hướng đến dashboard
+    if (Auth.isLoggedIn()) {
+      Auth.redirectToDashboard();
+    }
+  </script>
+</body>
+</html>

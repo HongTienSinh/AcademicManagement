@@ -254,3 +254,42 @@ exports.calculateGPA4 = async (req, res) => {
     });
   }
 };
+/**
+ * Lấy báo cáo sinh viên nợ môn (chỉ Admin)
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ */
+exports.getFailedCoursesReport = async (req, res) => {
+  try {
+    // Kiểm tra role = Admin
+    if (req.user.Role !== 'Admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Chỉ Admin mới có quyền xem báo cáo nợ môn',
+      });
+    }
+
+    const pool = await getConnection();
+
+    try {
+      const result = await pool.request()
+        .execute('sp_GetFailedCoursesReport');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Lấy báo cáo nợ môn thành công',
+        data: result.recordset || [],
+        count: result.recordset ? result.recordset.length : 0,
+      });
+    } catch (spError) {
+      throw spError;
+    }
+  } catch (error) {
+    console.error('Lỗi lấy báo cáo nợ môn:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Đã xảy ra lỗi khi lấy báo cáo nợ môn',
+      error: error.message,
+    });
+  }
+};

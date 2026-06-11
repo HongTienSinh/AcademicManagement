@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { getMyClasses } = require('../app/controllers/class.controller');
-const { verifyToken, isTeacher } = require('../middlewares/auth.middleware');
+const { getMyClasses, getAllClasses, getClassById, createClass, updateClass, deleteClass } = require('../app/controllers/class.controller');
+const { verifyToken, isTeacher, isAdmin } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -79,5 +79,12 @@ const { verifyToken, isTeacher } = require('../middlewares/auth.middleware');
  *         description: Lỗi máy chủ
  */
 router.get('/my-classes', verifyToken, isTeacher, getMyClasses);
+
+// Admin routes
+router.get('/', verifyToken, isAdmin, getAllClasses);
+router.get('/:classId', verifyToken, getClassById);
+router.post('/', verifyToken, isAdmin, createClass);
+router.put('/:classId', verifyToken, isAdmin, updateClass);
+router.delete('/:classId', verifyToken, isAdmin, deleteClass);
 
 module.exports = router;

@@ -1,15 +1,47 @@
 const { getConnection, sql } = require('../../config/db.config');
 
 /**
- * Get all users - Lấy danh sách tất cả người dùng
+ * Get all users - Lấy danh sách tất cả người dùng (có hỗ trợ phân trang và tìm kiếm)
  * Được sử dụng bởi Admin để xem tất cả tài khoản
+ * 
+ * Query parameters:
+ *   - page: số trang (mặc định 1)
+ *   - limit: số bản ghi trên một trang (mặc định 10)
+ *   - search: tìm kiếm theo FullName hoặc Username (tùy chọn)
  */
 const getUsers = async (req, res, next) => {
   try {
+    // Lấy page, limit, và search từ query
+    let page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search ? req.query.search.trim() : null;
+
+    // Validation: page và limit phải lớn hơn 0
+    if (page < 1 || limit < 1) {
+      return res.status(400).json({ error: 'page và limit phải lớn hơn 0' });
+    }
+
+    // Tính offset để dùng trong OFFSET ... ROWS
+    const offset = (page - 1) * limit;
+
     const pool = await getConnection();
-    
-    // Query để lấy danh sách user kèm thông tin role
-    const result = await pool.request()
+
+    // Xây dựng WHERE clause nếu có search
+    let whereClause = '';
+    let request = pool.request();
+
+    if (search) {
+      whereClause = 'WHERE u.FullName LIKE @search OR u.Username LIKE @search';
+      request = request.input('search', sql.NVarChar(255), `%${search}%`);
+    }
+
+    // Bước 1: Lấy tổng số bản ghi (có lọc nếu có search)
+    const countResult = await request
+      .query(`SELECT COUNT(*) as total FROM Users u ${whereClause}`);
+    const totalItems = countResult.recordset[0].total;
+
+    // Bước 2: Lấy dữ liệu có phân trang sử dụng OFFSET ... ROWS FETCH NEXT ... ROWS ONLY
+    const result = await request
       .query(`
         SELECT 
           u.UserId,
@@ -21,13 +53,24 @@ const getUsers = async (req, res, next) => {
           r.RoleName
         FROM Users u
         INNER JOIN Roles r ON u.RoleId = r.RoleId
+        ${whereClause}
         ORDER BY u.FullName
+        OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY
       `);
+
+    // Bước 3: Tính tổng số trang
+    const totalPages = Math.ceil(totalItems / limit);
 
     return res.status(200).json({
       message: 'Lấy danh sách người dùng thành công',
       data: result.recordset || [],
-      total: result.recordset?.length || 0,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: totalItems,
+        limit: limit,
+      },
+      ...(search && { search: search }), // Trả về search nếu có
     });
   } catch (error) {
     return next(error);
