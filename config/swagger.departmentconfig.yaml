@@ -1,0 +1,8 @@
+components:
+  schemas:
+    Department:
+      type: object
+      properties:
+        DepartmentId: { type: integer, example: 1 }
+        DepartmentCode: { type: string, example: "CNTT" }
+        DepartmentName: { type: string, example: "Công Nghệ Thông Tin" }

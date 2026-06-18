@@ -37,17 +37,19 @@ class ApiClient {
         headers,
       });
 
-      // Nếu token hết hạn, đăng xuất
-      if (response.status === 401) {
-        this.clearToken();
-        window.location.href = '/login.html';
-        return;
-      }
-
       const data = await response.json();
 
+      // Nếu không OK, throw error
       if (!response.ok) {
         throw new Error(data.error || data.message || 'Lỗi máy chủ');
+      }
+
+      // Nếu token hết hạn (401 sau khi đã login thành công), đăng xuất
+      if (response.status === 401) {
+        this.clearToken();
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return;
       }
 
       return data;

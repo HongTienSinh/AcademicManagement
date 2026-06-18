@@ -60,8 +60,9 @@ const login = async (req, res, next) => {
     return res.status(200).json({
       message: 'Đăng nhập thành công',
       token,
-      user: {
+      data: {
         UserId: user.UserId,
+        Username: username,
         FullName: user.FullName,
         Email: user.Email,
         Role: user.Role,

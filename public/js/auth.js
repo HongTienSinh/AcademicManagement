@@ -16,11 +16,12 @@ class Auth {
 
   static getRole() {
     const user = this.getUser();
-    return user?.Role || null;
+    return user?.Role ? user.Role.trim() : null;
   }
 
   static hasRole(role) {
-    return this.getRole() === role;
+    const userRole = this.getRole();
+    return userRole === role;
   }
 
   static isAdmin() {
@@ -38,12 +39,14 @@ class Auth {
   static logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login.html';
+    window.location.href = '/login';
   }
 
   static async login(username, password) {
     try {
       const response = await apiClient.login(username, password);
+      
+      console.log('✓ Login response:', response);
       
       apiClient.setToken(response.token);
       this.setUser({
@@ -53,27 +56,50 @@ class Auth {
         Email: response.data.Email,
         Role: response.data.Role,
       });
+      
+      console.log('✓ User saved to localStorage:', this.getUser());
 
       return response.data;
     } catch (error) {
+      console.error('✗ Login error:', error);
       throw error;
     }
   }
 
   static checkAuth() {
     if (!this.isLoggedIn()) {
-      window.location.href = '/login.html';
+      window.location.href = '/login';
     }
   }
 
   static redirectToDashboard() {
-    const role = this.getRole();
+    const user = this.getUser();
+    
+    console.log('🔄 Redirect attempt - User:', user);
+    
+    // Fallback: nếu không có user data, về login
+    if (!user || !user.Role) {
+      console.warn('⚠️ User data not found or Role missing');
+      window.location.href = '/login';
+      return;
+    }
+    
+    const role = user.Role.trim();
+    console.log('📌 User role:', role);
+    
+    // Trim whitespace in case Role has spaces
     if (role === 'Admin') {
-      window.location.href = '/app/views/admin/dashboard.html';
+      console.log('➜ Redirecting to /admin/dashboard');
+      window.location.href = '/admin/dashboard';
     } else if (role === 'Teacher') {
-      window.location.href = '/app/views/teacher/dashboard.html';
+      console.log('➜ Redirecting to /teacher/dashboard');
+      window.location.href = '/teacher/dashboard';
     } else if (role === 'Student') {
-      window.location.href = '/app/views/student/dashboard.html';
+      console.log('➜ Redirecting to /student/dashboard');
+      window.location.href = '/student/dashboard';
+    } else {
+      console.warn('⚠️ Unknown role:', role);
+      window.location.href = '/login';
     }
   }
 }

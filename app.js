@@ -11,6 +11,8 @@ const courseRoutes = require('./routes/course.routes');
 const enrollmentRoutes = require('./routes/enrollment.routes');
 const classRoutes = require('./routes/class.routes');
 const studentRoutes = require('./routes/student.routes');
+const adminDashboardRoutes = require('./routes/admindashboard.routes');
+const departmentRoutes = require('./routes/department.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -100,19 +102,28 @@ app.get('/login', (req, res) => {
   res.sendFile(__dirname + '/login.html');
 });
 
+// Dashboard Routes
+app.get('/admin/dashboard', (req, res) => {
+  res.sendFile(__dirname + '/app/views/admin/dashboard.html');
+});
+
+app.get('/teacher/dashboard', (req, res) => {
+  res.sendFile(__dirname + '/app/views/teacher/dashboard.html');
+});
+
+app.get('/student/dashboard', (req, res) => {
+  res.sendFile(__dirname + '/app/views/student/dashboard.html');
+});
+
 // API Routes
-app.use('/api/courses', courseRoutes);
-app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/users', userRoutes);
-
-app.get('/', (req, res) => {
-  res.redirect('/api-docs');
-});
-
 app.use('/api/auth', authRoutes);
-
+app.use('/api/courses', courseRoutes);
+app.use('/api/enrollments', enrollmentRoutes);
+app.use('/api/dashboard', adminDashboardRoutes);
+app.use('/api/departments', departmentRoutes);
 
 // Routes
 app.use('/api', require('./routes/index'));

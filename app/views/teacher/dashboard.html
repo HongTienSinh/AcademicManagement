@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Giảng Viên - Hệ Thống Quản Lý Học Vụ</title>
-  <link rel="stylesheet" href="/public/css/style.css">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <header>
@@ -146,18 +146,20 @@
     </div>
   </div>
 
-  <script src="/public/js/api.js"></script>
-  <script src="/public/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
   <script>
-    // Check authentication
-    Auth.checkAuth();
-    if (!Auth.isTeacher()) {
-      window.location.href = '/login.html';
-    }
-
-    // Set user info
-    const user = Auth.getUser();
-    UI.setNavbarUser(user);
+    (function() {
+      // Check user info
+      const user = Auth.getUser();
+      
+      // Redirect nếu không phải teacher
+      if (!Auth.isTeacher()) {
+        window.location.href = '/login';
+        return;
+      }
+      
+      UI.setNavbarUser(user);
 
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -322,6 +324,7 @@
 
     // Initial load
     loadDashboardStats();
+    })();
   </script>
 </body>
 </html>
