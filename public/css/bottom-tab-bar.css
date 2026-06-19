@@ -1,0 +1,71 @@
+/* public/css/bottom-tab-bar.css
+   Dùng CHUNG cho Admin / Teacher / Student.
+   Không sửa gì layout desktop hiện tại (style.css giữ nguyên) — chỉ thêm breakpoint
+   để biến .sidebar-menu thành bottom tab bar khi viewport hẹp.
+
+   Dùng max-width (không dùng orientation) vì max-width phản ánh đúng "đủ chỗ hiện
+   sidebar hay không", còn orientation chỉ so width/height nên dễ sai trong các
+   trường hợp như desktop bị kéo hẹp cửa sổ hoặc tablet xoay ngang nhưng vẫn hẹp.
+*/
+
+@media (max-width: 768px) {
+  /* ===== Sidebar -> Bottom Tab Bar ===== */
+  aside {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    height: auto;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+    z-index: 100;
+    background: #fff;
+  }
+
+  .sidebar-menu {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sidebar-menu li {
+    flex: 1;
+    text-align: center;
+  }
+
+  .sidebar-menu a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    color: #6b7280;
+    text-decoration: none;
+    white-space: normal;
+  }
+
+  .sidebar-menu a.active {
+    color: var(--primary-color, #2563eb);
+    font-weight: 600;
+  }
+
+  /* Tránh content bị tab bar dưới che mất */
+  .main-layout {
+    padding-bottom: 64px;
+  }
+
+  .main-layout main {
+    width: 100%;
+  }
+
+  /* Layout chính chuyển từ 2 cột (sidebar trái + main) sang 1 cột full-width */
+  .main-layout {
+    display: block;
+  }
+}

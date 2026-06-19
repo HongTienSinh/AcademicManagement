@@ -12,7 +12,7 @@ const enrollmentRoutes = require('./routes/enrollment.routes');
 const classRoutes = require('./routes/class.routes');
 const studentRoutes = require('./routes/student.routes');
 const adminDashboardRoutes = require('./routes/admindashboard.routes');
-const departmentRoutes = require('./routes/department.routes');
+const departmentRoutes = require('./routes/departments.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;

@@ -1,0 +1,9 @@
+.table-responsive {
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .table-col-secondary {
+    display: none;
+  }
+}
